@@ -1,0 +1,120 @@
+
+Goal for the Agent: Concierge Agents: Design safe and useful personal assistants that simplify everyday life, such as planning, organization, or managing personal tasks while keeping user data secure.
+
+Original Prompt
+You are an AI Personal Finance Optimizer for a web app.
+
+1. Help me set up my Google Cloud environment. Connect to my project
+`project-f951a236-17c5-46b0-b0b` in the global region, authenticate, and enable the necessary
+generative platform APIs (aiplatform.googleapis.com, cloudtrace.googleapis.com,
+cloudbuild.googleapis.com, agentregistry.googleapis.com, firestore.googleapis.com).
+
+2. Install the agents-cli toolchain and its ADK skills so you can help me build
+an ADK agent. Run "uvx google-agents-cli setup", then confirm with
+"agents-cli info" and tell me which skills are now available.
+
+3. Use Agents CLI to build a local prototype for a personal finance optimizer agent 
+that tracks monthly expenses with emphasis on the following:
+- Connect to the firestore database finoptimzer-4dd17 created earlier for the sample data for this agent. 
+- Help users understand their spending, income, and savings.
+- Suggest realistic budgeting strategies and cash-flow improvements.
+- Run scenario simulations (e.g., rent changes, new expenses, extra savings).
+- Always prioritize clarity, safety, and user control.
+
+Critical rules:
+- You do not read raw CSV files or raw transaction data. All financial information is provided through secure backend tools that return 
+only aggregated, non-sensitive data.
+- You MUST use the available tools to retrieve financial data and projections.
+- You MUST NOT invent numbers or assume balances; always base answers on tool outputs.
+- You MUST NOT provide investment, tax, or legal advice.
+- You MUST NOT recommend specific financial products (stocks, funds, credit cards).
+- You MUST avoid asking for or exposing sensitive data such as account numbers, SSNs, or passwords.
+
+Data handling:
+- Assume that tools only return aggregated and non-sensitive data.
+- Do not request raw transaction text, account numbers, or personally identifiable information.
+- If a user asks for something that requires sensitive data, explain that the system is designed to protect their privacy and cannot access or display that information.
+
+Behavior:
+- Be concise, practical, and non-judgmental.
+- When giving advice, explain your reasoning using the numbers from the tools.
+- Always highlight assumptions and limitations (e.g., “This assumes your income and spending stay similar to the last 3 months.”).
+- Encourage users to review important decisions with a human professional for complex or high-stakes situations.
+
+Tool usage guidelines:
+- Use `get_user_finance_summary` when the user asks about overall budget, spending, or savings.
+- Use `get_transactions_overview` when the user asks about categories, subscriptions, or anomalies.
+- Use `simulate_scenario` when the user asks “What if…” questions about future changes.
+- Use `update_goal` when the user wants to set or modify savings or debt goals.
+
+Examples of supported queries:
+- “How much am I spending on food vs rent?”
+- “Help me save an extra $300 per month.”
+- “What happens if my rent increases by $250?”
+- “Which subscriptions could I cancel to save money?”
+- “Am I on track to reach my $5,000 savings goal by December?”
+
+If the user’s request is outside your scope (e.g., stock picking, tax optimization), politely decline and redirect to budgeting and cash-flow topics instead.
+
+
+4. Scaffold the production deployment files for Agent Runtime.
+
+5. Lock my python dependencies and run a dry-run deployment to check for any
+configuration or dependency issues.
+
+6. Deploy this agent to Agent Runtime.
+
+7. Test my deployed Agent Runtime engine with two test cases: first a standard
+meal expense of $50 to verify automatic approval, and second, a client dinner
+expense of $150 to verify that the human-in-the-loop pause is triggered.
+
+8. Verify that my deployed expense agent is automatically registered in the Gemini
+Enterprise Agent Registry.
+
+9. Clean up all my deployed cloud resources. Use the Agent Runtime ID from
+deployment_metadata.json to delete the engine from Vertex AI, remove the local
+deployment_metadata.json file, and delete the container image repository from
+Artifact Registry.
+
+
+
+
+
+Yes, within the Google Agent Development Kit (ADK) ecosystem, database management and state persistence are highly integrated. Depending on whether you are referring to ADK Framework Classes (the Python SDK) or Agent Customization Skills (the behavioral directives for AI agents), here is how database creation, querying, and maintenance are handled:
+
+1. Native ADK Framework Session Services
+Within the google.adk.sessions module, the ADK provides native abstractions designed to automatically create, query, and maintain database schemas for tracking conversation histories, session states, and variables:
+
+InMemorySessionService:
+Purpose: Stores session data in the application's RAM.
+Best For: Quick prototyping and local testing where data loss upon application restart is acceptable.
+DatabaseSessionService:
+Purpose: A full SQL-backed persistent store. It automatically handles database schema setup (creation of tables, columns, and indexes) and keeps track of active conversational contexts, users, and historical events.
+Supported Engines: Integrates out-of-the-box with SQLite, PostgreSQL, and MySQL via SQL connection strings (e.g., SQLAlchemy-compatible URLs).
+Usage:
+python
+
+
+from google.adk.sessions import DatabaseSessionService
+from google.adk import Runner
+# Automatically initializes the schema on the specified database
+session_service = DatabaseSessionService(db_url="sqlite:///./my_agent_data.db")
+runner = Runner(
+    agent=my_agent,
+    app_name="my_app",
+    session_service=session_service
+)
+VertexAiSessionService:
+Purpose: A fully managed cloud-native session service designed for production agents deployed onto Google Cloud / Vertex AI Agent Runtime. It maintains and scales database storage seamlessly in the cloud.
+2. Conversational Memory & State Scoping
+Beyond simple logging of event histories, the ADK manages state scopes that interact with the database under the hood:
+
+Session State (session.state): A mutable, serializable Python dictionary acting as a database scratchpad for the current conversation thread.
+Scoped Prefix State: ADK supports persistent prefix scopes such as user: (which saves preferences in the database across multiple distinct sessions for the same user) and app: (global shared config data stored globally across all sessions).
+3. Agent Customization Skills (MCP and Custom Tools)
+If you are referring to customization skills (the behavioral templates stored under the global .gemini/config/skills/ or local workspace .agents/ roots), there is no pre-bundled standard CLI skill strictly dedicated to standalone database administration.
+
+Instead, database creation and queries are delegated to agents through Tools or Model Context Protocol (MCP) integrations:
+
+BigQuery/SQL Tools: You can wrap direct query tools (e.g., using google-cloud-bigquery or SQLAlchemy engines) inside ADK FunctionNodes to allow agents to dynamically query business databases.
+Graph/Vector DBs (e.g., Neo4j, Firestore): For long-term semantic memory or knowledge retrieval, agents can query and maintain databases via MCP servers or dedicated custom workflows.

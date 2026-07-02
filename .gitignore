@@ -1,0 +1,33 @@
+# Credentials & Secrets (CRITICAL)
+serviceAccountKey.json
+*.json.key
+secrets.py
+.env
+.env.*
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+.venv/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+.coverage.*
+
+# IDEs & System files
+.vscode/
+.idea/
+.project
+.pydevproject
+.DS_Store
+Thumbs.db
